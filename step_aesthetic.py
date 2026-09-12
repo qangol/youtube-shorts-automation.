@@ -14,10 +14,10 @@ from moviepy import (
     concatenate_audioclips
 )
 
-print("🍷 Завод 'Dark Aesthetic' (Stable Typewriter Edition)")
+print("🍷 Factory 'Dark Aesthetic' (Stable Typewriter Edition)")
 print("---------------------------------------------------------")
 
-# --- НАСТРОЙКИ ПАПОК ---
+# --- FOLDER SETTINGS ---
 BG_DIR = "Background_Videos"
 MUSIC_DIR = "Background_Music"
 OUTPUT_DIR = "3_Ready_Shorts"
@@ -25,7 +25,7 @@ FONT_PATH = "font.ttf"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+# --- HELPER FUNCTIONS ---
 def get_media_files(folder, extensions):
     files = []
     for f in os.listdir(folder):
@@ -38,13 +38,13 @@ def get_media_files(folder, extensions):
     return files
 
 def create_typing_text_clip(text, width, height, duration, font_path, index):
-    """Создает видеоклип с эффектом печатающегося текста (без морганий)"""
+    """Creates a video clip with a typewriter text effect (no flickering)"""
     max_text_height = height * 0.50
     max_text_width = width * 0.70
     font_size = 60
     min_font_size = 30
     
-    # Подбираем размер шрифта
+    # Adjust font size dynamically
     while font_size >= min_font_size:
         try:
             font = ImageFont.truetype(font_path, font_size)
@@ -73,13 +73,13 @@ def create_typing_text_clip(text, width, height, duration, font_path, index):
     typing_duration = duration * 0.6 
     time_per_char = typing_duration / max(1, total_chars)
     
-    # Создаем уникальную папку для кадров этого видео
+    # Create a unique temp folder for the frames of this specific video
     temp_dir = f"temp_typing_frames_{index}"
     os.makedirs(temp_dir, exist_ok=True)
     
     frame_clips = []
     
-    # Генерация кадров
+    # Generate frames
     for i in range(total_chars + 1):
         img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
@@ -111,34 +111,34 @@ def create_typing_text_clip(text, width, height, duration, font_path, index):
         else:
             clip_duration = time_per_char
             
-        # Загружаем кадр и задаем только длительность (старт рассчитается автоматически)
+        # Load the frame and set duration (start time is calculated automatically)
         frame_clip = ImageClip(frame_path).with_duration(clip_duration)
         frame_clips.append(frame_clip)
         
-    # Идеальная склейка кадров без зазоров
+    # Flawless frame concatenation without gaps
     return concatenate_videoclips(frame_clips, method="compose")
 
-# --- ОСНОВНАЯ ЛОГИКА ---
+# --- MAIN LOGIC ---
 try:
     with open("facts.txt", "r", encoding="utf-8") as file:
         poems = [line.strip() for line in file if line.strip()]
 except FileNotFoundError:
-    print("❌ Ошибка: Файл facts.txt не найден!")
+    print("❌ Error: File 'facts.txt' not found!")
     raise SystemExit(1)
 
 bg_files = get_media_files(BG_DIR, [".mp4", ".mov", ".m4v"])
 music_files = get_media_files(MUSIC_DIR, [".mp3", ".wav", ".m4a", ".aac"])
 
 if not poems or not bg_files or not music_files:
-    print("❌ Ошибка: Проверь facts.txt, фоны и музыку!")
+    print("❌ Error: Check 'facts.txt', backgrounds, and music files!")
     raise SystemExit(1)
 
 random.shuffle(bg_files)
 random.shuffle(music_files)
 
-print(f"📝 Цитаты: {len(poems)}")
-print(f"🎥 Фоны: {len(bg_files)}")
-print(f"🎵 Треки: {len(music_files)}")
+print(f"📝 Quotes found: {len(poems)}")
+print(f"🎥 Backgrounds found: {len(bg_files)}")
+print(f"🎵 Music tracks found: {len(music_files)}")
 print("---------------------------------------------------------")
 
 for index, text in enumerate(poems):
@@ -154,20 +154,20 @@ for index, text in enumerate(poems):
     final_video = None
 
     try:
-        print(f"\n🎬 Создаю {out_name}...")
+        print(f"\n🎬 Creating {out_name}...")
         print(f"   TEXT: {text[:80]!r}")
 
-        # Хронометраж: минимум 7 секунд
+        # Timing: minimum 7 seconds
         word_count = len(text.split())
         video_duration = max(7.0, (word_count / 2.5) + 2.0)
 
-        # Музыка
+        # Music setup
         current_music_name = music_files[index % len(music_files)]
         current_music_path = os.path.join(MUSIC_DIR, current_music_name)
         music_clip = AudioFileClip(current_music_path)
 
         if music_clip.duration <= 0:
-            raise ValueError(f"Некорректная длительность аудио: {current_music_name}")
+            raise ValueError(f"Invalid audio duration: {current_music_name}")
 
         if music_clip.duration < video_duration:
             repeats = int(video_duration // music_clip.duration) + 1
@@ -176,13 +176,13 @@ for index, text in enumerate(poems):
         m_start = random.uniform(0, max(0, music_clip.duration - video_duration))
         final_audio = music_clip.subclipped(m_start, m_start + video_duration).with_volume_scaled(0.3)
 
-        # Видеофон
+        # Background video setup
         current_bg_name = bg_files[index % len(bg_files)]
         current_bg_path = os.path.join(BG_DIR, current_bg_name)
         bg_clip = VideoFileClip(current_bg_path)
 
         if bg_clip.duration <= 0:
-            raise ValueError(f"Некорректная длительность видео: {current_bg_name}")
+            raise ValueError(f"Invalid video duration: {current_bg_name}")
 
         if bg_clip.duration < video_duration:
             repeats = int(video_duration // bg_clip.duration) + 1
@@ -191,7 +191,7 @@ for index, text in enumerate(poems):
             v_start = random.uniform(0, max(0, bg_clip.duration - video_duration))
             bg_clip = bg_clip.subclipped(v_start, v_start + video_duration)
 
-        # Кадрирование 9:16
+        # Crop to 9:16 ratio
         w, h = bg_clip.w, bg_clip.h
         target_ratio = 9 / 16
 
@@ -205,17 +205,17 @@ for index, text in enumerate(poems):
             )
             w = new_w
 
-        # Затемнение фона
+        # Dark overlay
         dark_overlay = ColorClip(size=(w, h), color=(0, 0, 0)).with_opacity(0.4).with_duration(video_duration)
 
-        # Печатающийся текст (с передачей index для уникальной папки)
+        # Typewriter text effect (passing index for unique temp folder)
         text_overlay = create_typing_text_clip(text, w, h, video_duration, FONT_PATH, index)
 
-        # Сборка
+        # Final composition
         final_visuals = CompositeVideoClip([bg_clip, dark_overlay, text_overlay])
         final_video = final_visuals.with_audio(final_audio)
 
-        print(f"   Рендер: {out_path}")
+        print(f"   Rendering to: {out_path}")
         final_video.write_videofile(
             out_path,
             codec="libx264",
@@ -223,16 +223,16 @@ for index, text in enumerate(poems):
             fps=30,
             logger="bar"
         )
-        print(f"✅ Готово: {out_name}")
+        print(f"✅ Success: {out_name}")
 
     except Exception as e:
-        print(f"❌ Ошибка на ролике {index + 1}: {out_name}")
+        print(f"❌ Error on video {index + 1}: {out_name}")
         print(f"   TEXT: {text!r}")
         print(f"   ERROR: {e}")
         traceback.print_exc()
 
     finally:
-        # Очистка памяти
+        # Memory cleanup
         for clip in [final_video, final_visuals, text_overlay, dark_overlay, bg_clip, final_audio, music_clip]:
             try:
                 if clip is not None:
@@ -240,12 +240,10 @@ for index, text in enumerate(poems):
             except Exception:
                 pass
                 
-        # Удаляем временную папку с кадрами именно этого ролика
+        # Remove the temp folder containing frames for this specific video
         temp_dir = f"temp_typing_frames_{index}"
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 print("---------------------------------------------------------")
-print("🍷 Пакет обработан успешно!")
-
-
+print("🍷 Batch processing completed successfully!")
