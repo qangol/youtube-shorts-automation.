@@ -35,7 +35,7 @@ def get_media_files(folder, extensions):
             full_path = os.path.join(folder, f)
             if os.path.isfile(full_path):
                 files.append(f)
-    return files
+    return files 
 
 def create_typing_text_clip(text, width, height, duration, font_path, index):
     """Creates a video clip with a typewriter text effect (no flickering)"""
